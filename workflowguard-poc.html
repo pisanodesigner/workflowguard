@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkflowGuard - Automation Security Scanner (POC)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0e1a;
+            --color-surface: #141923;
+            --color-surface-light: #1e2330;
+            --color-teal: #3e8c9c;
+            --color-teal-light: #5ab0c2;
+            --color-teal-dark: #2a6470;
+            --color-text: #e8eaed;
+            --color-text-dim: #9ca3af;
+            --color-danger: #ef4444;
+            --color-warning: #f59e0b;
+            --color-success: #10b981;
+            --color-border: #2d3748;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            border-bottom: 2px solid var(--color-teal-dark);
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--color-teal), transparent);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--color-teal-light), var(--color-teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--color-text-dim);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .badge {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--color-surface-light);
+            border: 1px solid var(--color-teal-dark);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--color-teal-light);
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: var(--color-surface);
+            border: 2px dashed var(--color-border);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: var(--color-teal-dark);
+            background: var(--color-surface-light);
+        }
+
+        .upload-section.dragover {
+            border-color: var(--color-teal);
+            background: var(--color-surface-light);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--color-text);
+        }
+
+        .upload-subtext {
+            color: var(--color-text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, var(--color-teal), var(--color-teal-dark));
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(62, 140, 156, 0.3);
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .score-card {
+            background: var(--color-surface);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--color-border);
+        }
+
+        .score-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .score-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .score-value {
+            font-size: 3rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .score-value.critical { color: var(--color-danger); }
+        .score-value.warning { color: var(--color-warning); }
+        .score-value.good { color: var(--color-success); }
+
+        .score-bar {
+            height: 12px;
+            background: var(--color-surface-light);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 1s ease;
+        }
+
+        .score-fill.critical { background: linear-gradient(90deg, var(--color-danger), #dc2626); }
+        .score-fill.warning { background: linear-gradient(90deg, var(--color-warning), #d97706); }
+        .score-fill.good { background: linear-gradient(90deg, var(--color-success), #059669); }
+
+        .findings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .finding-card {
+            background: var(--color-surface);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border-left: 4px solid;
+            border-color: var(--color-border);
+        }
+
+        .finding-card.critical { border-color: var(--color-danger); }
+        .finding-card.high { border-color: var(--color-warning); }
+        .finding-card.medium { border-color: #3b82f6; }
+
+        .finding-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .severity-badge.critical { background: rgba(239, 68, 68, 0.2); color: var(--color-danger); }
+        .severity-badge.high { background: rgba(245, 158, 11, 0.2); color: var(--color-warning); }
+        .severity-badge.medium { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+
+        .finding-description {
+            color: var(--color-text-dim);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .finding-details {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .detail-item {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--color-teal-light);
+            padding: 0.5rem;
+            background: var(--color-surface-light);
+            border-radius: 4px;
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-teal), var(--color-teal-dark));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--color-surface-light);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .no-issues {
+            text-align: center;
+            padding: 3rem;
+            background: var(--color-surface);
+            border-radius: 12px;
+            border: 1px solid var(--color-success);
+        }
+
+        .no-issues-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .no-issues-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--color-success);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding: 2rem 0;
+            border-top: 1px solid var(--color-border);
+            color: var(--color-text-dim);
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: var(--color-teal-light);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .platform-info {
+            background: var(--color-surface-light);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--color-surface-light);
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-label {
+            color: var(--color-text-dim);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ WorkflowGuard</h1>
+            <p class="subtitle">Automated Security Scanner for n8n, Make & Zapier Workflows</p>
+            <span class="badge">POC v0.1 - Pattern Detection Engine</span>
+        </header>
+
+        <div id="uploadSection" class="upload-section">
+            <div class="upload-icon">📄</div>
+            <p class="upload-text">Drop workflow JSON file here</p>
+            <p class="upload-subtext">Supports n8n, Make (Integromat), and Zapier workflows • Max 10MB</p>
+            <input type="file" id="fileInput" class="file-input" accept=".json">
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                Select File
+            </button>
+        </div>
+
+        <div id="resultsSection" class="results-section">
+            <div id="platformInfo" class="platform-info"></div>
+            
+            <div class="score-card">
+                <div class="score-header">
+                    <span class="score-title">Security Score</span>
+                    <span id="scoreValue" class="score-value">--</span>
+                </div>
+                <div class="score-bar">
+                    <div id="scoreFill" class="score-fill" style="width: 0%"></div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div id="criticalCount" class="stat-value" style="color: var(--color-danger)">0</div>
+                        <div class="stat-label">Critical</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="highCount" class="stat-value" style="color: var(--color-warning)">0</div>
+                        <div class="stat-label">High</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="mediumCount" class="stat-value" style="color: #3b82f6">0</div>
+                        <div class="stat-label">Medium</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="totalNodes" class="stat-value" style="color: var(--color-teal)">0</div>
+                        <div class="stat-label">Nodes Scanned</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="findingsContainer" class="findings-grid"></div>
+
+            <div class="actions">
+                <button class="btn btn-primary" onclick="downloadResults()">Download Report</button>
+                <button class="btn btn-secondary" onclick="resetScanner()">Scan Another File</button>
+            </div>
+        </div>
+
+        <footer>
+            <p><strong>WorkflowGuard POC</strong> • Built by <a href="https://pisanodesigner.com" target="_blank">Pisano Designer</a></p>
+            <p style="margin-top: 0.5rem;">All scanning happens locally in your browser. No data is sent to any server.</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem;">© 2026 WorkflowGuard. CFE • CISSP • CAISP Certified.</p>
+        </footer>
+    </div>
+
+    <script>
+        let scanResults = null;
+        let workflowData = null;
+
+        // Security patterns for detection
+        const PATTERNS = {
+            awsAccessKey: {
+                regex: /AKIA[0-9A-Z]{16}/g,
+                severity: 'critical',
+                title: 'AWS Access Key Detected',
+                description: 'Hardcoded AWS access keys found in workflow. These credentials can provide full access to your AWS account.',
+                remediation: 'Move AWS credentials to environment variables or use n8n/Make/Zapier credential management.'
+            },
+            awsSecretKey: {
+                regex: /aws_secret_access_key["\s:=]+([A-Za-z0-9/+=]{40})/gi,
+                severity: 'critical',
+                title: 'AWS Secret Key Detected',
+                description: 'AWS secret access key found in plaintext. This is a severe security risk.',
+                remediation: 'Remove hardcoded secrets immediately and use secure credential storage.'
+            },
+            stripeKey: {
+                regex: /sk_(live|test)_[0-9a-zA-Z]{24,}/g,
+                severity: 'critical',
+                title: 'Stripe API Key Detected',
+                description: 'Stripe secret key found. This could allow unauthorized payment processing.',
+                remediation: 'Store Stripe keys in encrypted credential storage, never in workflow code.'
+            },
+            openaiKey: {
+                regex: /sk-[a-zA-Z0-9]{48}/g,
+                severity: 'critical',
+                title: 'OpenAI API Key Detected',
+                description: 'OpenAI API key found in workflow. Could result in unauthorized API usage and charges.',
+                remediation: 'Use platform credential management for API keys.'
+            },
+            genericApiKey: {
+                regex: /["\s](api[_-]?key|apikey|api[_-]?token)["\s:=]+["\s]([a-zA-Z0-9_\-]{20,})["\s]/gi,
+                severity: 'high',
+                title: 'Generic API Key Detected',
+                description: 'Possible API key or token found hardcoded in workflow.',
+                remediation: 'Review and move any API keys to secure credential storage.'
+            },
+            password: {
+                regex: /["\s](password|passwd|pwd)["\s:=]+["\s]([^"\s]{3,})["\s]/gi,
+                severity: 'high',
+                title: 'Hardcoded Password Detected',
+                description: 'Password appears to be hardcoded in workflow configuration.',
+                remediation: 'Never store passwords in workflow code. Use credential management features.'
+            },
+            privateKey: {
+                regex: /-----BEGIN (RSA |DSA )?PRIVATE KEY-----/g,
+                severity: 'critical',
+                title: 'Private Key Detected',
+                description: 'Private cryptographic key found in workflow. This is a critical security issue.',
+                remediation: 'Remove private keys from workflow and use secure key management.'
+            },
+            githubToken: {
+                regex: /ghp_[a-zA-Z0-9]{36}/g,
+                severity: 'critical',
+                title: 'GitHub Personal Access Token Detected',
+                description: 'GitHub token found. Could allow unauthorized repository access.',
+                remediation: 'Revoke this token immediately and use secure credential storage.'
+            },
+            slackToken: {
+                regex: /xox[baprs]-[0-9]{10,13}-[0-9]{10,13}-[a-zA-Z0-9]{24,}/g,
+                severity: 'high',
+                title: 'Slack Token Detected',
+                description: 'Slack API token found in workflow.',
+                remediation: 'Use OAuth or platform credential management for Slack integrations.'
+            }
+        };
+
+        // Platform-specific checks
+        const PLATFORM_CHECKS = {
+            n8n: {
+                unauthWebhook: {
+                    check: (data) => {
+                        const results = [];
+                        const jsonStr = JSON.stringify(data);
+                        if (jsonStr.includes('"type":"n8n-nodes-base.webhook"') || 
+                            jsonStr.includes('"webhook"')) {
+                            // Check if webhook has no authentication
+                            if (jsonStr.includes('"authentication":"none"') || 
+                                jsonStr.includes('"webhookAuthentication":"none"')) {
+                                results.push({
+                                    severity: 'medium',
+                                    title: 'Unauthenticated Webhook Found',
+                                    description: 'Webhook node has no authentication configured. Anyone with the URL can trigger this workflow.',
+                                    remediation: 'Enable webhook authentication (Basic Auth, Header Auth, or IP whitelist).'
+                                });
+                            }
+                        }
+                        return results;
+                    }
+                },
+                credentialsInCode: {
+                    check: (data) => {
+                        const results = [];
+                        const jsonStr = JSON.stringify(data);
+                        if ((jsonStr.includes('"type":"n8n-nodes-base.code"') || 
+                             jsonStr.includes('"type":"n8n-nodes-base.function"')) &&
+                            (jsonStr.includes('password') || jsonStr.includes('apiKey') || 
+                             jsonStr.includes('token') || jsonStr.includes('secret'))) {
+                            results.push({
+                                severity: 'high',
+                                title: 'Possible Credentials in Code Node',
+                                description: 'Code/Function node may contain hardcoded credentials.',
+                                remediation: 'Use n8n credential system instead of hardcoding in code nodes.'
+                            });
+                        }
+                        return results;
+                    }
+                }
+            },
+            make: {
+                exposedConnection: {
+                    check: (data) => {
+                        const results = [];
+                        const jsonStr = JSON.stringify(data);
+                        if ((jsonStr.includes('"connection"') || jsonStr.includes('"token"')) &&
+                            (jsonStr.includes('password') || jsonStr.includes('api'))) {
+                            results.push({
+                                severity: 'high',
+                                title: 'Possible Exposed Connection Token',
+                                description: 'Make connection may contain exposed authentication tokens.',
+                                remediation: 'Ensure all connections use Make\'s credential vault.'
+                            });
+                        }
+                        return results;
+                    }
+                }
+            },
+            zapier: {
+                authInPlaintext: {
+                    check: (data) => {
+                        const results = [];
+                        const jsonStr = JSON.stringify(data);
+                        if (jsonStr.includes('"auth"') && 
+                            (jsonStr.includes('password') || jsonStr.includes('api_key'))) {
+                            results.push({
+                                severity: 'high',
+                                title: 'Authentication in Plaintext',
+                                description: 'Zapier auth configuration may contain plaintext credentials.',
+                                remediation: 'Use Zapier\'s built-in authentication system.'
+                            });
+                        }
+                        return results;
+                    }
+                }
+            }
+        };
+
+        // Detect workflow platform
+        function detectPlatform(data) {
+            const jsonStr = JSON.stringify(data);
+            
+            if (data.nodes || jsonStr.includes('n8n-nodes-base')) {
+                return 'n8n';
+            } else if (data.flow || data.scenario || jsonStr.includes('"module"')) {
+                return 'make';
+            } else if (data.steps || data.zap || jsonStr.includes('"action_fields"')) {
+                return 'zapier';
+            }
+            
+            return 'unknown';
+        }
+
+        // Count nodes
+        function countNodes(data) {
+            if (data.nodes) return data.nodes.length;
+            if (data.flow) return data.flow.length;
+            if (data.steps) return data.steps.length;
+            return 0;
+        }
+
+        // Scan workflow
+        function scanWorkflow(data) {
+            const findings = [];
+            const jsonStr = JSON.stringify(data);
+            const platform = detectPlatform(data);
+            
+            // Pattern-based scanning
+            for (const [key, pattern] of Object.entries(PATTERNS)) {
+                const matches = jsonStr.matchAll(pattern.regex);
+                const matchArray = Array.from(matches);
+                
+                if (matchArray.length > 0) {
+                    findings.push({
+                        ...pattern,
+                        count: matchArray.length,
+                        samples: matchArray.slice(0, 2).map(m => m[0].substring(0, 50) + '...')
+                    });
+                }
+            }
+            
+            // Platform-specific checks
+            if (PLATFORM_CHECKS[platform]) {
+                for (const check of Object.values(PLATFORM_CHECKS[platform])) {
+                    const checkResults = check.check(data);
+                    findings.push(...checkResults);
+                }
+            }
+            
+            return {
+                platform,
+                findings,
+                nodeCount: countNodes(data)
+            };
+        }
+
+        // Calculate security score
+        function calculateScore(findings) {
+            let score = 100;
+            findings.forEach(finding => {
+                if (finding.severity === 'critical') score -= 20;
+                else if (finding.severity === 'high') score -= 10;
+                else if (finding.severity === 'medium') score -= 5;
+            });
+            return Math.max(0, score);
+        }
+
+        // Display results
+        function displayResults(results) {
+            const { platform, findings, nodeCount } = results;
+            
+            // Platform info
+            const platformNames = {
+                n8n: 'n8n',
+                make: 'Make (Integromat)',
+                zapier: 'Zapier',
+                unknown: 'Unknown Platform'
+            };
+            
+            document.getElementById('platformInfo').innerHTML = `
+                <strong>Platform Detected:</strong> ${platformNames[platform]} • 
+                <strong>Nodes:</strong> ${nodeCount}
+            `;
+            
+            // Calculate score
+            const score = calculateScore(findings);
+            const scoreClass = score >= 80 ? 'good' : score >= 50 ? 'warning' : 'critical';
+            
+            document.getElementById('scoreValue').textContent = score;
+            document.getElementById('scoreValue').className = `score-value ${scoreClass}`;
+            
+            const scoreFill = document.getElementById('scoreFill');
+            scoreFill.className = `score-fill ${scoreClass}`;
+            setTimeout(() => {
+                scoreFill.style.width = score + '%';
+            }, 100);
+            
+            // Count by severity
+            const critical = findings.filter(f => f.severity === 'critical').length;
+            const high = findings.filter(f => f.severity === 'high').length;
+            const medium = findings.filter(f => f.severity === 'medium').length;
+            
+            document.getElementById('criticalCount').textContent = critical;
+            document.getElementById('highCount').textContent = high;
+            document.getElementById('mediumCount').textContent = medium;
+            document.getElementById('totalNodes').textContent = nodeCount;
+            
+            // Display findings
+            const container = document.getElementById('findingsContainer');
+            
+            if (findings.length === 0) {
+                container.innerHTML = `
+                    <div class="no-issues" style="grid-column: 1 / -1;">
+                        <div class="no-issues-icon">✅</div>
+                        <div class="no-issues-text">No Security Issues Detected</div>
+                        <p style="color: var(--color-text-dim); margin-top: 1rem;">
+                            This workflow passed all pattern-based security checks. 
+                            Consider enabling AI-powered deep analysis for comprehensive scanning.
+                        </p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = findings.map(finding => `
+                    <div class="finding-card ${finding.severity}">
+                        <div class="finding-title">
+                            ${finding.title}
+                            <span class="severity-badge ${finding.severity}">${finding.severity}</span>
+                        </div>
+                        <div class="finding-description">${finding.description}</div>
+                        ${finding.count ? `<div class="finding-details">
+                            <div style="font-weight: 600; margin-bottom: 0.5rem;">Found ${finding.count} instance${finding.count > 1 ? 's' : ''}</div>
+                            ${finding.samples ? finding.samples.map(s => 
+                                `<div class="detail-item">${s}</div>`
+                            ).join('') : ''}
+                        </div>` : ''}
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border); color: var(--color-teal-light); font-size: 0.85rem;">
+                            <strong>Remediation:</strong> ${finding.remediation}
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            // Show results section
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            // Store results
+            scanResults = results;
+        }
+
+        // Download results
+        function downloadResults() {
+            if (!scanResults) return;
+            
+            const { platform, findings, nodeCount } = scanResults;
+            const score = calculateScore(findings);
+            const timestamp = new Date().toISOString();
+            
+            let report = `WORKFLOWGUARD SECURITY SCAN REPORT
+==================================
+
+Scan Date: ${timestamp}
+Platform: ${platform}
+Nodes Scanned: ${nodeCount}
+Security Score: ${score}/100
+
+`;
+            
+            if (findings.length === 0) {
+                report += 'RESULT: ✅ No security issues detected\n\n';
+                report += 'All pattern-based security checks passed.\n';
+            } else {
+                report += `FINDINGS: ${findings.length} issue(s) detected\n\n`;
+                
+                findings.forEach((finding, i) => {
+                    report += `${i + 1}. ${finding.title} [${finding.severity.toUpperCase()}]\n`;
+                    report += `   ${finding.description}\n`;
+                    if (finding.count) {
+                        report += `   Instances found: ${finding.count}\n`;
+                    }
+                    report += `   Remediation: ${finding.remediation}\n\n`;
+                });
+            }
+            
+            report += '\n---\nGenerated by WorkflowGuard POC v0.1\n';
+            report += 'https://github.com/yourname/workflowguard\n';
+            
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `workflowguard-scan-${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Reset scanner
+        function resetScanner() {
+            document.getElementById('uploadSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            scanResults = null;
+            workflowData = null;
+        }
+
+        // File upload handling
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                processFile(e.target.files[0]);
+            }
+        });
+
+        function processFile(file) {
+            if (!file.name.endsWith('.json')) {
+                alert('Please upload a JSON file');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File too large. Maximum size is 10MB');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    workflowData = data;
+                    const results = scanWorkflow(data);
+                    displayResults(results);
+                } catch (error) {
+                    alert('Error parsing JSON file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
